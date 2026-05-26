@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>StudyGPT — Live AI Exam Mentor</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #05080f; --surface: #0a0f1e; --card: #0d1526; --card2: #111d35;
+  --border: #1a2740; --border2: #243550;
+  --blue: #3b82f6; --cyan: #06b6d4; --green: #10b981; --orange: #f59e0b;
+  --red: #ef4444; --purple: #8b5cf6; --pink: #ec4899;
+  --text: #e8f0ff; --text2: #94a3b8; --text3: #4a5a7a;
+  --thinking: #1a1040; --thinking-border: #4c3580; --thinking-text: #c4b5fd;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; position:relative; }
+body::before { content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(59,130,246,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+body::after { content:''; position:fixed; inset:0; background:radial-gradient(ellipse 70% 50% at 15% 0%,rgba(59,130,246,0.08) 0%,transparent 55%),radial-gradient(ellipse 50% 60% at 85% 100%,rgba(139,92,246,0.07) 0%,transparent 55%); pointer-events:none; z-index:0; }
+
+header { position:relative; z-index:20; display:flex; align-items:center; gap:14px; padding:12px 20px; background:rgba(10,15,30,0.92); border-bottom:1px solid var(--border); backdrop-filter:blur(24px); flex-shrink:0; }
+.brand { display:flex; align-items:center; gap:10px; }
+.brand-icon { width:38px; height:38px; background:linear-gradient(135deg,var(--blue),var(--purple)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 0 20px rgba(59,130,246,0.35); flex-shrink:0; }
+.brand-name { font-size:20px; font-weight:800; letter-spacing:-0.5px; background:linear-gradient(90deg,#60a5fa,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.brand-sub { font-size:10px; color:var(--text2); letter-spacing:1.5px; text-transform:uppercase; font-weight:500; }
+.live-badge { display:flex; align-items:center; gap:6px; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); border-radius:20px; padding:4px 12px; font-size:11px; font-weight:600; color:var(--green); }
+.live-dot { width:7px; height:7px; background:var(--green); border-radius:50%; animation:pulse-dot 1.5s infinite; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+.header-right { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.exam-pills { display:flex; gap:6px; }
+.pill { padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; letter-spacing:0.5px; cursor:pointer; transition:all 0.2s; border:1px solid transparent; }
+.pill-cat { background:rgba(59,130,246,0.15); color:#60a5fa; border-color:rgba(59,130,246,0.3); }
+.pill-ssc { background:rgba(245,158,11,0.15); color:#fbbf24; border-color:rgba(245,158,11,0.3); }
+.pill-upsc { background:rgba(16,185,129,0.12); color:#34d399; border-color:rgba(16,185,129,0.3); }
+.pill-bank { background:rgba(236,72,153,0.12); color:#f472b6; border-color:rgba(236,72,153,0.3); }
+.pill.active { transform:scale(1.05); box-shadow:0 0 12px currentColor; }
+
+.layout { display:flex; flex:1; overflow:hidden; position:relative; z-index:1; }
+
+.sidebar { width:240px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; }
+.sidebar::-webkit-scrollbar { width:3px; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--border2); }
+.sb-section { padding:14px 12px; border-bottom:1px solid var(--border); }
+.sb-label { font-size:9px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--text3); margin-bottom:10px; }
+.sb-btn { display:flex; align-items:flex-start; gap:8px; width:100%; background:transparent; border:1px solid transparent; border-radius:8px; padding:8px 10px; color:var(--text2); font-family:'Outfit',sans-serif; font-size:12px; font-weight:500; cursor:pointer; text-align:left; transition:all 0.18s; line-height:1.4; margin-bottom:3px; }
+.sb-btn:hover { background:var(--card); border-color:var(--border2); color:var(--text); }
+.sb-btn .sb-icon { font-size:14px; flex-shrink:0; margin-top:1px; }
+.sb-btn.cat:hover { border-color:rgba(59,130,246,0.4); color:#60a5fa; }
+.sb-btn.ssc:hover { border-color:rgba(245,158,11,0.4); color:#fbbf24; }
+.sb-btn.upsc:hover { border-color:rgba(16,185,129,0.4); color:#34d399; }
+.sb-btn.bank:hover { border-color:rgba(236,72,153,0.4); color:#f472b6; }
+
+.mode-toggle { display:flex; gap:4px; background:var(--card); border-radius:10px; padding:4px; margin-bottom:10px; }
+.mode-opt { flex:1; padding:6px 4px; border:none; border-radius:7px; background:transparent; color:var(--text3); font-family:'Outfit',sans-serif; font-size:10px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.mode-opt.active { background:linear-gradient(135deg,var(--blue),var(--purple)); color:#fff; }
+.stats-row { display:flex; gap:6px; }
+.stat { flex:1; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 6px; text-align:center; }
+.stat .n { font-size:20px; font-weight:800; color:var(--blue); font-family:'JetBrains Mono',monospace; }
+.stat .l { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
+
+.chat { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; scroll-behavior:smooth; }
+.messages::-webkit-scrollbar { width:4px; }
+.messages::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.welcome { margin:auto; max-width:580px; text-align:center; padding:30px 20px; animation:fadeUp 0.5s ease both; }
+.welcome-glow { width:80px; height:80px; background:linear-gradient(135deg,var(--blue),var(--purple)); border-radius:22px; display:flex; align-items:center; justify-content:center; font-size:36px; margin:0 auto 20px; box-shadow:0 0 40px rgba(59,130,246,0.4),0 0 80px rgba(139,92,246,0.2); animation:float 3s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.welcome h2 { font-size:28px; font-weight:800; letter-spacing:-0.5px; background:linear-gradient(135deg,#60a5fa,#a78bfa,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:10px; }
+.welcome p { color:var(--text2); font-size:14px; line-height:1.7; margin-bottom:24px; }
+.capability-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+.cap { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:12px; color:var(--text2); text-align:left; display:flex; align-items:center; gap:8px; transition:all 0.2s; cursor:pointer; }
+.cap:hover { border-color:var(--border2); color:var(--text); background:var(--card2); }
+.cap .ci { font-size:16px; }
+.quick-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.qbtn { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; color:var(--text); font-family:'Outfit',sans-serif; font-size:11px; font-weight:500; cursor:pointer; text-align:left; transition:all 0.2s; line-height:1.5; }
+.qbtn:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,0.3); }
+.qbtn .qt { display:block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.qbtn.cat .qt { color:#60a5fa; } .qbtn.cat:hover { border-color:rgba(59,130,246,0.4); }
+.qbtn.ssc .qt { color:#fbbf24; } .qbtn.ssc:hover { border-color:rgba(245,158,11,0.4); }
+.qbtn.upsc .qt { color:#34d399; } .qbtn.upsc:hover { border-color:rgba(16,185,129,0.4); }
+.qbtn.think .qt { color:#c4b5fd; } .qbtn.think:hover { border-color:rgba(139,92,246,0.4); }
+
+.msg { display:flex; gap:10px; animation:fadeUp 0.3s ease both; }
+.msg.user { flex-direction:row-reverse; align-self:flex-end; max-width:75%; }
+.msg.ai { align-self:flex-start; width:100%; max-width:860px; }
+.av { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.msg.user .av { background:linear-gradient(135deg,#1e3a5f,#0f2044); border:1px solid rgba(59,130,246,0.3); }
+.msg.ai .av { background:linear-gradient(135deg,var(--blue),var(--purple)); font-weight:700; font-size:11px; color:#fff; box-shadow:0 0 14px rgba(59,130,246,0.3); }
+.bubble { padding:13px 16px; border-radius:14px; font-size:14px; line-height:1.75; }
+.msg.user .bubble { background:linear-gradient(135deg,#1a3a60,#0f2a4a); border:1px solid rgba(59,130,246,0.25); border-bottom-right-radius:4px; }
+.msg.ai .bubble { background:var(--card); border:1px solid var(--border); border-bottom-left-radius:4px; flex:1; }
+
+.thinking-wrap { margin-bottom:12px; border:1px solid var(--thinking-border); border-radius:10px; overflow:hidden; }
+.thinking-header { background:var(--thinking); padding:8px 14px; display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+.thinking-header .th-icon { font-size:14px; }
+.thinking-header .th-title { font-size:12px; font-weight:600; color:var(--thinking-text); }
+.thinking-header .th-toggle { margin-left:auto; font-size:10px; color:var(--thinking-text); transition:transform 0.3s; }
+.thinking-header.open .th-toggle { transform:rotate(180deg); }
+.thinking-body { background:rgba(26,16,64,0.5); padding:12px 14px; font-size:12px; color:var(--thinking-text); font-family:'JetBrains Mono',monospace; line-height:1.8; display:none; border-top:1px solid var(--thinking-border); white-space:pre-wrap; }
+.thinking-body.open { display:block; }
+
+.bubble b, .bubble strong { color:#60a5fa; font-weight:700; }
+.bubble em { color:#a78bfa; font-style:normal; font-weight:600; }
+.bubble .section { display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; color:#fbbf24; margin:14px 0 6px; border-left:3px solid #fbbf24; padding-left:8px; }
+.bubble code { background:rgba(59,130,246,0.12); border:1px solid rgba(59,130,246,0.2); border-radius:5px; padding:2px 7px; font-family:'JetBrains Mono',monospace; font-size:12px; color:#93c5fd; }
+.bubble .step { background:var(--card2); border:1px solid var(--border2); border-radius:8px; padding:10px 14px; margin:8px 0; font-size:13px; }
+.bubble .step .sn { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; background:linear-gradient(135deg,var(--blue),var(--purple)); border-radius:50%; font-size:11px; font-weight:700; margin-right:8px; vertical-align:middle; color:#fff; }
+.bubble ul { padding-left:20px; margin:8px 0; }
+.bubble li { margin-bottom:5px; }
+.bubble p { margin-bottom:8px; }
+
+/* Table support for DILR */
+.bubble table { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+.bubble th { background:rgba(59,130,246,0.2); border:1px solid var(--border2); padding:8px 10px; text-align:center; color:#60a5fa; font-weight:700; }
+.bubble td { border:1px solid var(--border); padding:7px 10px; text-align:center; color:var(--text2); }
+.bubble tr:nth-child(even) td { background:rgba(255,255,255,0.02); }
+
+.source-tag { display:inline-flex; align-items:center; gap:5px; background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.2); border-radius:5px; padding:3px 10px; font-size:10px; font-weight:600; color:var(--cyan); margin-top:10px; }
+
+.typing { display:flex; gap:5px; padding:14px 16px; align-items:center; }
+.typing-text { font-size:12px; color:var(--text3); margin-left:6px; font-style:italic; }
+.tdot { width:7px; height:7px; border-radius:50%; animation:tdot2 1.2s infinite; }
+.tdot:nth-child(1) { background:var(--blue); }
+.tdot:nth-child(2) { background:var(--purple); animation-delay:0.2s; }
+.tdot:nth-child(3) { background:var(--cyan); animation-delay:0.4s; }
+@keyframes tdot2 { 0%,60%,100%{transform:translateY(0);opacity:0.4} 30%{transform:translateY(-8px);opacity:1} }
+
+.input-zone { padding:12px 20px 16px; background:rgba(10,15,30,0.95); border-top:1px solid var(--border); backdrop-filter:blur(24px); }
+.input-controls { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.ctrl-btn { padding:5px 12px; border-radius:20px; border:1px solid var(--border2); background:var(--card); color:var(--text2); font-family:'Outfit',sans-serif; font-size:11px; font-weight:600; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:5px; }
+.ctrl-btn:hover { border-color:var(--blue); color:#60a5fa; }
+.ctrl-btn.on { background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.4); color:#c4b5fd; }
+.ctrl-btn.web-on { background:rgba(6,182,212,0.12); border-color:rgba(6,182,212,0.3); color:var(--cyan); }
+.input-box { display:flex; gap:10px; align-items:flex-end; background:var(--card); border:1px solid var(--border2); border-radius:14px; padding:12px 14px; transition:border-color 0.2s,box-shadow 0.2s; }
+.input-box:focus-within { border-color:rgba(59,130,246,0.5); box-shadow:0 0 0 3px rgba(59,130,246,0.07); }
+textarea { flex:1; background:transparent; border:none; outline:none; color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; resize:none; max-height:130px; line-height:1.6; min-height:22px; }
+textarea::placeholder { color:var(--text3); }
+.send { width:38px; height:38px; border-radius:10px; border:none; background:linear-gradient(135deg,var(--blue),var(--purple)); color:#fff; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; box-shadow:0 0 18px rgba(59,130,246,0.35); }
+.send:hover { transform:scale(1.08); box-shadow:0 0 28px rgba(59,130,246,0.5); }
+.send:disabled { opacity:0.35; cursor:not-allowed; transform:none; }
+.input-hint { font-size:10px; color:var(--text3); display:flex; gap:14px; margin-top:7px; align-items:center; flex-wrap:wrap; }
+.hint-item { display:flex; align-items:center; gap:4px; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@media(max-width:640px) { .sidebar{display:none;} .quick-grid{grid-template-columns:1fr;} .capability-grid{grid-template-columns:1fr;} .exam-pills{display:none;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-icon">🎓</div>
+    <div>
+      <div class="brand-name">StudyGPT</div>
+      <div class="brand-sub">Live AI Exam Mentor</div>
+    </div>
+  </div>
+  <div class="live-badge"><div class="live-dot"></div> LIVE · AI Connected</div>
+  <div class="header-right">
+    <div class="exam-pills">
+      <span class="pill pill-cat active" onclick="setExam('CAT',event)">CAT</span>
+      <span class="pill pill-ssc" onclick="setExam('SSC',event)">SSC</span>
+      <span class="pill pill-upsc" onclick="setExam('UPSC',event)">UPSC</span>
+      <span class="pill pill-bank" onclick="setExam('Banking',event)">Banking</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-section">
+      <div class="sb-label">Mode</div>
+      <div class="mode-toggle">
+        <button class="mode-opt active" id="m-normal" onclick="setMode('normal')">Normal</button>
+        <button class="mode-opt" id="m-think" onclick="setMode('think')">🧠 Think</button>
+        <button class="mode-opt" id="m-pyq" onclick="setMode('pyq')">PYQ</button>
+      </div>
+      <div class="stats-row">
+        <div class="stat"><div class="n" id="qc">0</div><div class="l">Asked</div></div>
+        <div class="stat"><div class="n" id="sc">0</div><div class="l">Sessions</div></div>
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">CAT 2026</div>
+      <button class="sb-btn cat" onclick="ask('Give me a complete VARC strategy for CAT 2026 — how to approach RC passages, Para Jumbles, Odd Sentence, Para Summary. Include time allocation per question type and common mistakes to avoid.')"><span class="sb-icon">📖</span>VARC Strategy</button>
+      <button class="sb-btn cat" onclick="ask('Give me 2 complete CAT-level DILR practice sets. For each set provide: the full data/scenario, 4 numbered questions, and complete step-by-step solutions for every question.')"><span class="sb-icon">📊</span>DILR Practice Sets</button>
+      <button class="sb-btn cat" onclick="ask('Give me a comprehensive QA formula and shortcut sheet for CAT 2026 covering: Number System, Algebra, Geometry, Time-Speed-Distance, Percentages, P&C, and Probability. Include at least 2 example applications per topic.')"><span class="sb-icon">🔢</span>QA Formula Sheet</button>
+      <button class="sb-btn cat" onclick="ask('Give me 5 CAT-level Reading Comprehension questions based on a passage about Economics or Technology (like the actual CAT exam). Include answer options and detailed explanations.')"><span class="sb-icon">📝</span>CAT RC Questions</button>
+      <button class="sb-btn cat" onclick="ask('What are the latest IIM Ahmedabad, IIM Bangalore, IIM Calcutta, and IIM Lucknow CAT cutoffs (2024)? Include overall percentile, sectional cutoffs, and what WAT-PI process involves.')"><span class="sb-icon">🎯</span>IIM Cutoffs</button>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">SSC CGL</div>
+      <button class="sb-btn ssc" onclick="ask('Teach me SSC CGL Reasoning tricks with 2 solved examples each for: (1) Syllogism, (2) Coding-Decoding, (3) Blood Relations, (4) Direction Sense, (5) Number Series, (6) Analogy')"><span class="sb-icon">🧠</span>Reasoning Tricks</button>
+      <button class="sb-btn ssc" onclick="ask('List the most important General Awareness topics for SSC CGL 2026 exam. Cover: Indian History (ancient/medieval/modern), Indian Polity, Geography, Economy, and General Science. Give 5 key facts for each topic that are frequently asked.')"><span class="sb-icon">🌍</span>GK Topics</button>
+      <button class="sb-btn ssc" onclick="ask('Give me 10 SSC CGL Maths PYQ-style questions — 5 from Trigonometry and 5 from Geometry. Number each question, show all answer options, give complete solutions and shortcuts.')"><span class="sb-icon">➗</span>Maths PYQs</button>
+      <button class="sb-btn ssc" onclick="ask('Explain the complete SSC CGL 2026 exam pattern: Tier 1 (CBE), Tier 2 (CBE), Tier 3 (Descriptive). Cover: subjects, marks, time limit, negative marking, and expected cutoffs for General category.')"><span class="sb-icon">📋</span>Full Pattern</button>
+    </div>
+    <div class="sb-section">
+      <div class="sb-label">Other Exams</div>
+      <button class="sb-btn upsc" onclick="ask('List the most frequently repeated UPSC Prelims topics from 2019-2024 in: Indian Polity (with article numbers), Modern History, Physical Geography, and Indian Economy. Give 3-4 key points for each topic.')"><span class="sb-icon">🏛️</span>UPSC Prelims Topics</button>
+      <button class="sb-btn bank" onclick="ask('Give me the complete SBI PO 2026 syllabus with a preparation strategy. Focus on: Reasoning (Puzzles, Seating Arrangement, Syllogism), Quant (DI, Arithmetic), and English (RC, Cloze Test). Include a 60-day plan.')"><span class="sb-icon">🏦</span>SBI PO Strategy</button>
+    </div>
+  </div>
+
+  <div class="chat">
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome">
+        <div class="welcome-glow">🎓</div>
+        <h2>StudyGPT — Your Live AI Mentor</h2>
+        <p>Connected to real AI. Ask for any PYQ, DILR set, formula, concept, or strategy — and I will give you exactly what you asked for, with complete solutions.</p>
+        <div class="capability-grid">
+          <div class="cap" onclick="ask('Give me a complete formula sheet for CAT QA — Number System, Algebra, Geometry, Arithmetic, P&C, and Probability. Include shortcut tricks and example applications.')"><span class="ci">📐</span>All Formulas & Shortcuts</div>
+          <div class="cap" onclick="ask('Solve this step by step: If 2x+3y=12 and xy=6, find x²+y². Show every step clearly with explanations.')"><span class="ci">🔍</span>Step-by-Step Solutions</div>
+          <div class="cap" onclick="ask('Give me 2 complete CAT DILR sets in the style of CAT 2022. Each set must have: full data table or arrangement, 4 questions, and detailed solutions for every question.')"><span class="ci">📄</span>Complete DILR Sets</div>
+          <div class="cap" onclick="ask('Create a 90-day study plan for CAT 2026 for someone starting from scratch. Give week-by-week topics for VARC, DILR, and QA with daily time allocation.')"><span class="ci">🗓️</span>Personalized Study Plans</div>
+        </div>
+        <div class="quick-grid">
+          <button class="qbtn cat" onclick="ask('Give me 5 CAT-level Permutation & Combination questions. Number each question 1-5, show all answer options, give complete step-by-step solutions and shortcuts for each.')">
+            <span class="qt">CAT · Quant PYQ</span>5 P&amp;C questions with full solutions
+          </button>
+          <button class="qbtn ssc" onclick="ask('Teach SSC CGL Reasoning: Give 3 solved examples each for Analogy, Number Series, and Coding-Decoding. Explain the trick/pattern for each type.')">
+            <span class="qt">SSC · Reasoning</span>Analogy, Series, Coding with tricks
+          </button>
+          <button class="qbtn upsc" onclick="ask('Which UPSC Prelims GS1 topics appeared in 2018, 2019, 2020, 2021, 2022, 2023, and 2024? List topic-wise frequency and what specific subtopics were covered each year.')">
+            <span class="qt">UPSC · GS Analysis</span>Topic frequency 2018–2024
+          </button>
+          <button class="qbtn think" onclick="ask('THINK MODE: A train 150m long passes a pole in 15 seconds. How long to pass a 300m platform? Show your complete reasoning process step by step before giving the final answer.')">
+            <span class="qt">🧠 Thinking Mode</span>Watch AI reason step-by-step
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-zone">
+      <div class="input-controls">
+        <button class="ctrl-btn" id="think-btn" onclick="toggleThink()">🧠 Think Mode <span id="think-label">OFF</span></button>
+        <button class="ctrl-btn web-on">🌐 Web Search ON</button>
+        <button class="ctrl-btn" onclick="randomPYQ()">🎲 Random PYQ</button>
+        <button class="ctrl-btn" onclick="clearChat()">🗑 Clear</button>
+      </div>
+      <div class="input-box">
+        <textarea id="inp" rows="1" placeholder="Ask for a DILR set, PYQ, formula, concept, or strategy..." onkeydown="handleKey(event)" oninput="autoH(this)"></textarea>
+        <button class="send" id="sendBtn" onclick="sendMsg()">➤</button>
+      </div>
+      <div class="input-hint">
+        <span class="hint-item">⌨ Enter = Send</span>
+        <span class="hint-item">⇧ Shift+Enter = New line</span>
+        <span class="hint-item" style="color:#a78bfa">🧠 <span id="modeShow">Normal Mode</span></span>
+        <span class="hint-item" style="color:#60a5fa">📚 Exam: <span id="examShow">CAT</span></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let thinkMode = false;
+let busy = false;
+let currentExam = 'CAT';
+let currentMode = 'normal';
+let qCount = 0;
+const history = [];
+
+// ── SYSTEM PROMPT (FIXED) ──
+// The #1 fix: Explicit rule to answer EXACTLY what was asked
+const SYSTEM = `You are StudyGPT, an elite AI exam mentor for Indian competitive exams (CAT, SSC CGL, UPSC, Banking).
+
+## RULE #1 — ANSWER EXACTLY WHAT WAS ASKED (most important rule):
+Always provide exactly what the user requested. Do NOT substitute with something else.
+- If asked for DILR questions/sets → Give complete DILR sets (data + all questions + full solutions)
+- If asked for PYQ questions → Give those questions with complete solutions
+- If asked for formulas → Give formulas with examples
+- If asked to solve a problem → Solve it completely with steps
+- If asked for a study plan → Give a detailed plan
+Never replace specific requested content with generic topic explanations.
+
+## EXAM KNOWLEDGE:
+CAT: VARC (RC, Para Jumbles, Odd Sentence, Para Summary), DILR (Seating Arrangements — linear/circular, Games & Tournaments, Routes & Networks, Binary Logic, Scheduling, Data Sufficiency sets), QA (Number System, Algebra, Geometry, Arithmetic, P&C, Probability, Modern Math). PYQs 2000–2024.
+
+SSC CGL/CHSL: Reasoning (Syllogism, Coding-Decoding, Blood Relations, Direction, Number/Letter Series, Analogy, Matrices, Venn Diagrams, Puzzles), Quant (all chapters + shortcuts), English, GK (History, Polity, Geography, Economy, Science). PYQs 2010–2024.
+
+UPSC: Prelims GS1 (History, Geography, Polity, Economy, Environment, Science & Tech) and CSAT. PYQs 2011–2024.
+
+Banking (SBI/IBPS PO & Clerk, RBI): Reasoning Puzzles, Seating Arrangements, Syllogism, DI sets, Arithmetic, English.
+
+## FOR DILR SETS — MANDATORY structure:
+1. Set title (e.g., "DILR Set: Linear Seating Arrangement")
+2. Complete scenario with all conditions/data clearly stated
+3. Questions numbered Q1, Q2, Q3, Q4 (minimum 4 questions)
+4. Solutions: complete step-by-step solution for EVERY question with final answer marked ✅
+5. Approach tip at end
+
+## FOR PYQ/QUESTION REQUESTS — MANDATORY:
+1. Question number and text
+2. Answer options (A), (B), (C), (D) for MCQs
+3. Full step-by-step solution
+4. ✅ Correct Answer: [option]
+5. ⚡ Shortcut if applicable
+
+## FORMATTING:
+- **bold** for key terms, numbered lists for steps, bullet points for lists
+- 📌 key insight, ✅ final answer, ⚡ shortcut, 🔑 formula, ⚠️ common mistake
+- Present DILR data in clear tables or structured text
+- Do NOT truncate answers — complete every question's solution
+
+## THINK MODE:
+When message contains [THINK MODE], write "🧠 Reasoning Process" with full thinking, then "---", then "Final Answer:" with clean answer.
+
+End with a brief motivational line. 🎯`;
+
+// ── SETTERS ──
+function setExam(e, evt) {
+  currentExam = e;
+  document.getElementById('examShow').textContent = e;
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  if (evt && evt.target) evt.target.classList.add('active');
+}
+
+function setMode(m) {
+  currentMode = m;
+  document.querySelectorAll('.mode-opt').forEach(b => b.classList.remove('active'));
+  document.getElementById('m-' + m).classList.add('active');
+  thinkMode = (m === 'think');
+  updateModeUI();
+}
+
+function toggleThink() {
+  thinkMode = !thinkMode;
+  updateModeUI();
+}
+
+function updateModeUI() {
+  const btn = document.getElementById('think-btn');
+  const lbl = document.getElementById('think-label');
+  const modeShow = document.getElementById('modeShow');
+  if (thinkMode) {
+    btn.classList.add('on'); lbl.textContent = 'ON';
+    modeShow.textContent = '🧠 Think Mode';
+  } else {
+    btn.classList.remove('on'); lbl.textContent = 'OFF';
+    modeShow.textContent = currentMode === 'pyq' ? '📝 PYQ Mode' : 'Normal Mode';
+  }
+}
+
+// ── BUILD API PROMPT ──
+// This is the critical fix — we inject specific instructions based on what was asked
+function buildPrompt(userText) {
+  const lower = userText.toLowerCase();
+  let instructions = `[Exam: ${currentExam}]`;
+
+  // Detect intent and add specific instructions
+  if (lower.includes('dilr') || (lower.includes('set') && (lower.includes('logical') || lower.includes('data')))) {
+    instructions += ` [TASK: Provide complete DILR set(s) with: full scenario/data, 4+ numbered questions, and complete step-by-step solution for EVERY question. Do not summarize solutions.]`;
+  } else if (lower.includes('pyq') || lower.includes('previous year') || (lower.includes('give') && lower.includes('question'))) {
+    instructions += ` [TASK: Provide the requested questions with answer options and complete solutions for each. Do not skip solutions.]`;
+  } else if (lower.includes('solve') || lower.includes('find') || lower.includes('calculate')) {
+    instructions += ` [TASK: Solve completely with all steps shown clearly.]`;
+  } else if (lower.includes('formula') || lower.includes('shortcut') || lower.includes('trick')) {
+    instructions += ` [TASK: Provide comprehensive formula/shortcut list with example applications.]`;
+  } else if (lower.includes('plan') || lower.includes('strategy') || lower.includes('schedule')) {
+    instructions += ` [TASK: Provide a detailed, actionable plan or strategy — not generic tips.]`;
+  } else if (currentMode === 'pyq') {
+    instructions += ` [TASK: Provide previous-year-style questions with complete solutions for the requested topic.]`;
+  }
+
+  if (thinkMode) {
+    instructions += ` [THINK MODE: Show full 🧠 Reasoning Process first, then --- then Final Answer:]`;
+  }
+
+  return `${instructions}\n\nRequest: ${userText}`;
+}
+
+// ── RANDOM PYQ ──
+function randomPYQ() {
+  const options = {
+    CAT: [
+      'Give me a complete CAT DILR set — Seating Arrangement type (8 people, linear). Include all conditions, Q1-Q4 with complete solutions for each.',
+      'Give me 4 CAT QA questions on Number System (divisibility, remainders) with complete solutions and shortcuts.',
+      'Give me a complete CAT DILR set — Games & Tournaments (4 teams, round robin). Include score table, Q1-Q4, full solutions.',
+      'Give me 5 CAT Arithmetic PYQ-style questions on Time, Speed & Distance with step-by-step solutions.',
+      'Give me 4 CAT VARC Para Jumble questions (5 sentences each) with the correct order and explanation.',
+    ],
+    SSC: [
+      'Give me 5 SSC CGL Reasoning PYQs on Syllogism — include statements, conclusions, answer options, and explanations.',
+      'Give me 5 SSC CGL Maths PYQs on Percentage and Profit & Loss — include answer options and full solutions.',
+      'Give me 10 SSC CGL GK questions on Indian Polity with answer options and explanations.',
+      'Give me 5 SSC CGL English Error Spotting questions with explanations of the grammar rule violated.',
+    ],
+    UPSC: [
+      'Give me 10 UPSC Prelims-style MCQs on Indian Polity (Fundamental Rights and DPSP) with answers and brief explanations.',
+      'Give me 10 UPSC Prelims MCQs on Modern Indian History (1857-1947) with answers and explanations.',
+      'Give me 10 UPSC Prelims GS1 questions on Physical Geography — atmosphere, ocean, rivers — with answers and explanations.',
+    ],
+    Banking: [
+      'Give me a complete Banking Reasoning Puzzle set — Floor arrangement (7 floors, 7 people). Include 5 conditions, Q1-Q4, and complete solutions.',
+      'Give me a Banking DI set — Table Chart on production data of 5 factories over 4 years. Include 5 questions with full solutions.',
+      'Give me 5 IBPS PO Quantitative Aptitude questions on Mixture & Alligation with complete solutions.',
+    ],
+  };
+
+  const list = options[currentExam] || options['CAT'];
+  ask(list[Math.floor(Math.random() * list.length)]);
+}
+
+// ── UI HELPERS ──
+function autoH(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight,130) + 'px'; }
+function handleKey(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } }
+function clearChat() { history.length = 0; document.getElementById('messages').innerHTML = ''; }
+function removeWelcome() { const w = document.getElementById('welcome'); if (w) w.remove(); }
+function scroll() { const m = document.getElementById('messages'); m.scrollTop = m.scrollHeight; }
+function escHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function getLoadingText(text) {
+  const lower = text.toLowerCase();
+  if (lower.includes('dilr') || lower.includes('seating') || lower.includes('arrangement')) return 'DILR set with solutions';
+  if (lower.includes('pyq') || lower.includes('question')) return 'questions with solutions';
+  if (lower.includes('formula') || lower.includes('shortcut')) return 'formula sheet';
+  if (lower.includes('plan') || lower.includes('strategy')) return 'study plan';
+  if (lower.includes('solve') || lower.includes('find')) return 'complete solution';
+  return 'your answer';
+}
+
+// ── ADD MESSAGES ──
+function addUserMsg(text) {
+  removeWelcome();
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `<div class="av">👤</div><div class="bubble">${escHtml(text)}</div>`;
+  document.getElementById('messages').appendChild(div);
+  scroll();
+}
+
+function addTyping(ctx) {
+  const div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing-msg';
+  div.innerHTML = `<div class="av">SG</div><div class="bubble"><div class="typing"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div><span class="typing-text">Generating ${ctx}...</span></div></div>`;
+  document.getElementById('messages').appendChild(div);
+  scroll();
+}
+
+function removeTyping() { const t = document.getElementById('typing-msg'); if (t) t.remove(); }
+
+function addAIMsg(raw) {
+  removeTyping();
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+
+  const av = document.createElement('div');
+  av.className = 'av'; av.textContent = 'SG';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  // Parse thinking block
+  let thinkContent = '';
+  let mainContent = raw;
+
+  if (raw.includes('🧠 Reasoning Process')) {
+    const dividerIdx = raw.indexOf('---');
+    if (dividerIdx > -1) {
+      thinkContent = raw.substring(raw.indexOf('🧠 Reasoning Process') + 20, dividerIdx).trim();
+      mainContent = raw.substring(dividerIdx + 3).replace(/^Final Answer:/i,'').trim();
+    }
+  }
+
+  if (thinkContent) {
+    const tw = document.createElement('div');
+    tw.className = 'thinking-wrap';
+    tw.innerHTML = `<div class="thinking-header" onclick="toggleThinkBox(this)"><span class="th-icon">🧠</span><span class="th-title">Reasoning Process — click to expand</span><span class="th-toggle">▼</span></div><div class="thinking-body">${escHtml(thinkContent)}</div>`;
+    bubble.appendChild(tw);
+  }
+
+  const content = document.createElement('div');
+  content.innerHTML = formatMsg(mainContent);
+  bubble.appendChild(content);
+
+  const src = document.createElement('div');
+  src.className = 'source-tag';
+  src.innerHTML = `⚡ StudyGPT AI · ${currentExam} · ${thinkMode ? '🧠 Think' : currentMode === 'pyq' ? '📝 PYQ' : 'Standard'} Mode`;
+  bubble.appendChild(src);
+
+  div.appendChild(av);
+  div.appendChild(bubble);
+  document.getElementById('messages').appendChild(div);
+  scroll();
+}
+
+function toggleThinkBox(header) {
+  header.classList.toggle('open');
+  header.nextElementSibling.classList.toggle('open');
+}
+
+function formatMsg(text) {
+  text = text.replace(/^#{2,3} (.+)$/gm, '<span class="section">$1</span>');
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/^(\d+)\. (.+)$/gm, (m,n,t) => `<div class="step"><span class="sn">${n}</span>${t}</div>`);
+  text = text.replace(/^[•\-] (.+)$/gm, '<li>$1</li>');
+  text = text.replace(/(<li>[\s\S]*?<\/li>\n?)+/g, s => `<ul>${s}</ul>`);
+  text = text.replace(/\n\n+/g, '<br><br>');
+  text = text.replace(/\n/g, '<br>');
+  return text;
+}
+
+// ── MAIN SEND (FIXED: max_tokens 4000, smart prompt) ──
+async function ask(text) {
+  document.getElementById('inp').value = text;
+  await sendMsg();
+}
+
+async function sendMsg() {
+  const inp = document.getElementById('inp');
+  const text = inp.value.trim();
+  if (!text || busy) return;
+
+  busy = true;
+  document.getElementById('sendBtn').disabled = true;
+  inp.value = ''; inp.style.height = 'auto';
+
+  qCount++;
+  document.getElementById('qc').textContent = qCount;
+
+  const displayText = text;
+  const apiText = buildPrompt(text); // With exam context + task instructions
+
+  addUserMsg(displayText);
+  history.push({ role: 'user', content: apiText });
+  addTyping(getLoadingText(text));
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000, // FIX: was 1000, now 4000 — allows complete DILR sets and solutions
+        system: SYSTEM,
+        messages: history,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }]
+      })
+    });
+
+    const data = await res.json();
+
+    let reply = '';
+    if (data.content && Array.isArray(data.content)) {
+      for (const block of data.content) {
+        if (block.type === 'text') reply += block.text;
+      }
+    }
+
+    if (!reply && data.error) reply = `⚠️ API Error: ${data.error.message}. Please try again.`;
+    else if (!reply) reply = 'No response received. Please try again.';
+
+    history.push({ role: 'assistant', content: reply });
+    addAIMsg(reply);
+
+  } catch (err) {
+    removeTyping();
+    const errDiv = document.createElement('div');
+    errDiv.className = 'msg ai';
+    errDiv.innerHTML = `<div class="av">SG</div><div class="bubble">⚠️ <strong>Connection error.</strong> Please check your internet and try again. 🎯<br><small style="color:var(--text3)">${escHtml(err.message)}</small></div>`;
+    document.getElementById('messages').appendChild(errDiv);
+    scroll();
+  }
+
+  busy = false;
+  document.getElementById('sendBtn').disabled = false;
+  inp.focus();
+}
+
+// Session counter
+(function() {
+  const s = parseInt(localStorage.getItem('sg3_s') || '0') + 1;
+  localStorage.setItem('sg3_s', s);
+  document.getElementById('sc').textContent = s;
+  document.getElementById('inp').focus();
+})();
+</script>
+</body>
+</html>
